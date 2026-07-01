@@ -1,5 +1,5 @@
 ﻿// Data - Logo Sources
-const logoSources = ["Logos/LogoGemini.png", "Logo.png"];
+const logoSources = ["Logos/LogoGemini.png"];
 const APP_SHELL_CACHE_PREFIX = "rosario-shell-";
 const UPDATE_APPLIED_FLAG = "el-mago-tours-games-updated";
 const OFFLINE_REQUIRED_FILES = [
@@ -7,7 +7,7 @@ const OFFLINE_REQUIRED_FILES = [
     "./style.css",
     "./script.js",
     "./manifest.json",
-    "./android-chrome-192x192.png",
+    "./Favicon/android-icon-192x192.png",
     "./Logos/LogoGemini.png"
 ];
 
@@ -81,44 +81,6 @@ const triviaDecks = [
                 reference: "El 22 de febrero de 1874, Teófilo Zeballos, mejicano, se elevaba en el cielo rosarino, dando lugar a la primera ascensión en globo aerostático en nuestra ciudad, lo llevó a cabo en la actual Plaza López.",
                 source: "revista 'Una Mano de su Mutual', Asociación Médica de Rosario, Año 2, Nº 9, Marzo 1996. Pág.34-36."
             }
-        // Update header user area on juegos.html using gamesState or localStorage.authUser
-        function updateGamesHeaderUI() {
-            const nameEl = document.getElementById('games-user-name');
-            const actionBtn = document.getElementById('games-user-action');
-            if (!nameEl || !actionBtn) return;
-
-            let user = gamesState.user;
-            if (!user) {
-                try { user = JSON.parse(localStorage.getItem('authUser') || 'null'); } catch (e) { user = null; }
-            }
-
-            if (user && (user.uid || user.email)) {
-                const display = user.displayName || user.email || user.name || 'Usuario';
-                nameEl.textContent = display;
-                actionBtn.textContent = 'Cerrar sesión';
-                actionBtn.onclick = async () => {
-                    // Prefer Firebase sign out if available
-                    if (gamesState.firebaseReady && gamesState.authFns && gamesState.auth) {
-                        try {
-                            await gamesState.authFns.signOut(gamesState.auth);
-                        } catch (e) { console.warn('Error en signOut:', e); }
-                    }
-                    try { localStorage.removeItem('authUser'); } catch (e) {}
-                    updateGamesHeaderUI();
-                    // redirect to perfil page to encourage re-login if needed
-                    window.location.href = 'index.html#perfil';
-                };
-            } else {
-                nameEl.textContent = '';
-                actionBtn.textContent = 'Entrar';
-                actionBtn.onclick = () => { window.location.href = 'index.html#perfil'; };
-            }
-        }
-
-        // Sync header when other tabs update authUser
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'authUser') updateGamesHeaderUI();
-        });
         ]
     },
     {
@@ -380,6 +342,42 @@ function initializeApp() {
     try { initFirebaseGames(); } catch (e) { /* ignore */ }
     try { updateGamesHeaderUI(); } catch (e) {}
 }
+
+// Update header user area on juegos.html using gamesState or localStorage.authUser
+function updateGamesHeaderUI() {
+    const nameEl = document.getElementById('games-user-name');
+    const actionBtn = document.getElementById('games-user-action');
+    if (!nameEl || !actionBtn) return;
+
+    let user = gamesState.user;
+    if (!user) {
+        try { user = JSON.parse(localStorage.getItem('authUser') || 'null'); } catch (e) { user = null; }
+    }
+
+    if (user && (user.uid || user.email)) {
+        const display = user.displayName || user.email || user.name || 'Usuario';
+        nameEl.textContent = display;
+        actionBtn.textContent = 'Cerrar sesión';
+        actionBtn.onclick = async () => {
+            if (gamesState.firebaseReady && gamesState.authFns && gamesState.auth) {
+                try {
+                    await gamesState.authFns.signOut(gamesState.auth);
+                } catch (e) { console.warn('Error en signOut:', e); }
+            }
+            try { localStorage.removeItem('authUser'); } catch (e) {}
+            updateGamesHeaderUI();
+            window.location.href = 'index.html#perfil';
+        };
+    } else {
+        nameEl.textContent = '';
+        actionBtn.textContent = 'Entrar';
+        actionBtn.onclick = () => { window.location.href = 'index.html#perfil'; };
+    }
+}
+
+window.addEventListener('storage', event => {
+    if (event.key === 'authUser') updateGamesHeaderUI();
+});
 
 // Initialize Firebase (games page) to use Firestore leaderboards when available
 async function initFirebaseGames() {
