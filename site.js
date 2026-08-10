@@ -63,15 +63,6 @@ function initViews() {
         });
     });
 
-    // Ensure the Juegos link always navigates to juegos.html (avoid SPA interception)
-    const juegosLink = document.getElementById("nav-juegos");
-    if (juegosLink) {
-        juegosLink.addEventListener("click", event => {
-            event.preventDefault();
-            window.location.href = juegosLink.getAttribute("href");
-        });
-    }
-
     window.addEventListener("popstate", () => {
         showView(getHashView());
     });
@@ -838,6 +829,7 @@ function openLocalReservationsModal() {
     if (!modal || !backdrop) return;
     backdrop.hidden = false;
     modal.hidden = false;
+    modal.classList.add('is-open');
     document.body.classList.add('booking-modal-open');
     populateLocalReservations();
 }
@@ -846,6 +838,7 @@ function closeLocalReservationsModal() {
     const modal = document.getElementById('local-reservations-modal');
     const backdrop = document.getElementById('booking-modal-backdrop');
     if (!modal || !backdrop || modal.hidden) return;
+    modal.classList.remove('is-open');
     modal.hidden = true;
     backdrop.hidden = true;
     document.body.classList.remove('booking-modal-open');
@@ -1288,25 +1281,15 @@ function selectAgendaItem(button) {
     resetBookingContext();
 
     const agendaInput = document.getElementById("booking-agenda-id");
-    const meetingInput = document.getElementById("booking-meeting");
-    const tourInput = document.getElementById("booking-tour");
     const dateInput = document.getElementById("booking-date");
     const durationInput = document.getElementById("booking-duration");
     const priceInput = document.getElementById("booking-price");
+    const durationValue = normalizeDurationString(duration) || duration || "";
 
     if (agendaInput) agendaInput.value = agendaId;
-    if (meetingInput) meetingInput.value = meeting;
-    if (tourInput && tour) {
-        if (![...tourInput.options].some(option => option.value === tour)) {
-            tourInput.add(new Option(tour, tour));
-        }
-        tourInput.value = tour;
-        // trigger handler to reveal fields, description and set duration
-        tourInput.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    if (dateInput && date) dateInput.value = date;
-    if (durationInput && (duration || price)) {
-        const value = duration || "Duración";
+    if (dateInput && /^\d{4}-\d{2}-\d{2}$/.test(date)) dateInput.value = date;
+    if (durationInput && (durationValue || price)) {
+        const value = durationValue || "Duraci\u00f3n";
         let existing = [...durationInput.options].find(opt => opt.value === value);
         if (!existing) {
             existing = new Option(value, value);
@@ -1327,8 +1310,7 @@ function selectAgendaItem(button) {
 
     if (priceInput) priceInput.value = price || "";
 
-    // Update visible price UI
-    updateBookingPriceUI(price || (durationInput?.selectedOptions?.[0]?.dataset?.price || ""));
+    handleTourSelection(tour || "Salida especial", { meeting, duration: durationValue, price });
 
     setText(
         "selected-agenda-feedback",
